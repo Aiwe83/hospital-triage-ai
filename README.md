@@ -69,20 +69,51 @@ Paciente UI → FastAPI → LangGraph orchestrator
 
 ## 2. Arquitectura
 
-```
-[Next.js UI] --REST/SSE--> [FastAPI] --LangGraph--> 6 agentes
-                              |                       |
-                              v                       v
-                          MongoDB               Elasticsearch (RAG)
-                                                      |
-                                              Servidor MCP (herramientas)
-                                                      |
-                                       ┌──────────────┴──────────────┐
-                                  hospital_context        send_report_to_drive
-                                                                     │
-                                                       copia el PDF a carpeta local sincronizada
-                                                                     │
-                                                  Google Drive Desktop la sube a la nube
+```mermaid
+flowchart TB
+    UI["🎮 Next.js 15 UI<br/><i>Pixel-art hospital · SSE live</i>"]
+    API["⚡ FastAPI Backend"]
+    LG{"🧠 LangGraph<br/>orchestrator"}
+
+    A1["🩺 clinical_analyst<br/><sub>risk signals + vitals</sub>"]
+    A2["📚 protocol_researcher<br/><sub>RAG over protocols</sub>"]
+    A3["🏥 hospital_systems_executor<br/><sub>MCP tools</sub>"]
+    A4["🛡️ clinical_safety_validator<br/><sub>guardrails + disclaimer</sub>"]
+    A5["📝 report_writer<br/><sub>preliminary triage report</sub>"]
+
+    MONGO[("🍃 MongoDB 7<br/>cases + agent_trace")]
+    ES[("🔎 Elasticsearch 8<br/>BM25 RAG")]
+    MCP["🔌 MCP Server<br/><sub>hospital tools + Drive sync</sub>"]
+    PDF["📄 PDF Report<br/><sub>ReportLab</sub>"]
+    DRIVE["☁️ Google Drive Desktop<br/><sub>auto-sync</sub>"]
+
+    UI -->|REST + SSE| API
+    API --> LG
+    LG --> A1
+    A1 --> A2
+    A2 --> A3
+    A3 --> A4
+    A4 --> A5
+    LG <--> MONGO
+    A2 --> ES
+    A3 --> MCP
+    A5 --> PDF
+    PDF --> DRIVE
+    LG -.SSE events.-> UI
+
+    classDef ui fill:#FF006E,stroke:#7C3AED,stroke-width:2px,color:#fff
+    classDef lg fill:#7C3AED,stroke:#00F0FF,stroke-width:2px,color:#fff
+    classDef api fill:#009688,stroke:#fff,stroke-width:2px,color:#fff
+    classDef agent fill:#1C3C3C,stroke:#00F0FF,stroke-width:1px,color:#fff
+    classDef data fill:#0D1117,stroke:#FF006E,stroke-width:2px,color:#fff
+    classDef tool fill:#FF6B35,stroke:#fff,stroke-width:1px,color:#fff
+
+    class UI ui
+    class LG lg
+    class API api
+    class A1,A2,A3,A4,A5 agent
+    class MONGO,ES data
+    class MCP,PDF,DRIVE tool
 ```
 
 ### Agentes LangGraph (secuenciales)
