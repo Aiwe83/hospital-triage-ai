@@ -1,0 +1,126 @@
+name: hospital-triage-ai
+
+services:
+  mongo:
+    image: mongo:7
+    container_name: htai-mongo
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - htai
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.13.4
+    container_name: htai-elasticsearch
+    restart: unless-stopped
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+    ports:
+      - "9200:9200"
+    volumes:
+      - es_data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fs http://localhost:9200/_cluster/health | grep -q 'status'"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+    networks:
+      - htai
+
+  mcp-server:
+    build:
+      context: ../mcp-server
+      dockerfile: Dockerfile
+    container_name: htai-mcp
+    restart: unless-stopped
+    env_file:
+      - ../.env
+    environment:
+      - PORT=7800
+      # Destination folder for the `send_report_to_drive` MCP tool.
+      # Inside the container the path is /app/reports — the host folder
+      # synced to the cloud by Google Drive Desktop.
+      - DRIVE_SYNC_FOLDER=/app/reports
+    ports:
+      - "7800:7800"
+    volumes:
+      # Drive-synced destination. Only renamed `informe_*.pdf` files
+      # land here, so the cloud copy stays clean.
+      - ../reports:/app/reports
+      # Internal handoff dir for the source PDF. Lives OUTSIDE the synced
+      # folder; backend writes the working PDF here, MCP reads it, and the
+      # adapter deletes the source after a successful copy. Without this
+      # split Drive would upload both the internal source and the final
+      # copy on every delivery.
+      - ../data/internal:/app/data/internal
+    networks:
+      - htai
+
+  backend:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    container_name: htai-backend
+    restart: unless-stopped
+    env_file:
+      - ../.env
+    environment:
+      - MONGODB_URI=mongodb://mongo:27017
+      - ELASTICSEARCH_URL=http://elasticsearch:9200
+      - MCP_SERVER_URL=http://mcp-server:7800
+      - REPORT_OUTPUT_DIR=/app/reports
+      - REPORT_INTERNAL_DIR=/app/data/internal
+    ports:
+      - "8000:8000"
+    volumes:
+      - ../reports:/app/reports
+      # Internal working dir shared with mcp-server (see comment there).
+      - ../data/internal:/app/data/internal
+      # Read-only mount so the /handbook/{name} endpoint can stream the
+      # project README and CLAUDE.md to the frontend `/docs` page without
+      # baking them into the image.
+      - ../README.md:/app/docs/README.md:ro
+      - ../CLAUDE.md:/app/docs/CLAUDE.md:ro
+    depends_on:
+      mongo:
+        condition: service_healthy
+      elasticsearch:
+        condition: service_healthy
+      mcp-server:
+        condition: service_started
+    networks:
+      - htai
+
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+    container_name: htai-frontend
+    restart: unless-stopped
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+      - NEXT_PUBLIC_SSE_URL=http://localhost:8000
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    networks:
+      - htai
+
+volumes:
+  mongo_data:
+  es_data:
+
+networks:
+  htai:
+    driver: bridge

@@ -1,0 +1,65 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Node
+node_modules/
+.next/
+out/
+dist/
+build/
+*.tsbuildinfo
+.turbo/
+
+# Env
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# IDE
+.vscode/
+.idea/
+*.swp
+.DS_Store
+
+# Logs / runtime
+*.log
+logs/
+.coverage
+coverage/
+htmlcov/
+
+# Project artifacts
+reports/*.pdf
+reports/*.json
+!reports/.gitkeep
+
+# Docker
+.docker/
+
+# Secrets — Google Service Account JSON for MCP Drive tool.
+# Never commit credentials. Keep an empty folder so the volume mount works.
+secrets/*
+!secrets/.gitkeep
+!secrets/README.md
+
+# Misc
+graphify-out/
+*.zip
+*.bak
+*.tmp
+
+# Debug scratch (never commit)
+b64.txt
+pending_resp.json
+
+# Data sidecars (keep folder structure only)
+data/internal/*
+!data/internal/.gitkeep
