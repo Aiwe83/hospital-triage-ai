@@ -438,3 +438,12 @@ hospital-triage-ai/
 - Cada informe incluye el descargo: *"Este sistema es únicamente soporte a la decisión clínica."*
 
 Ver `docs/prompt_proyecto_hospital-triage-ai_V6.txt` para la spec completa y `CLAUDE.md` para las reglas de trabajo.
+
+## Versionado
+
+Cada commit crea un tag anotado `Vn` (V1, V2 …) y una entrada en
+[`CHANGELOG.md`](CHANGELOG.md) con los cambios de esa versión.
+
+```bash
+git checkout V1   # o V2, V3…
+```

@@ -7,6 +7,10 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es/).
 (V1, V2, V3 …) y una entrada aquí describiendo sus cambios.
 Categorías: `Added` / `Changed` / `Removed` / `Fixed` / `Security`.
 
+## [V2] - 2026-05-22
+### Added
+- Sección "Versionado" en el README apuntando al CHANGELOG.
+
 ## [V1] - 2026-05-22
 ### Added
 - Release pública inicial: sistema multi-agente de triaje clínico
